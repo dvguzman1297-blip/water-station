@@ -1,0 +1,36 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    -webkit-tap-highlight-color: transparent;
+  }
+  body {
+    @apply min-h-dvh text-navy antialiased;
+    background:
+      radial-gradient(60rem 30rem at 85% -10%, rgba(2, 132, 199, 0.18), transparent 60%),
+      radial-gradient(40rem 30rem at -10% 20%, rgba(16, 185, 129, 0.10), transparent 60%),
+      linear-gradient(180deg, #e0f2fe 0%, #f0f9ff 45%, #f8fafc 100%);
+    background-attachment: fixed;
+  }
+}
+
+@layer components {
+  .glass {
+    @apply border border-white/70 bg-white/65 shadow-[0_8px_30px_rgba(15,23,42,0.08)] backdrop-blur-xl;
+  }
+  .field {
+    @apply h-12 w-full rounded-xl border border-navy/15 bg-white/85 px-4 text-base outline-none placeholder:text-navy/40 focus:border-ocean focus:ring-2 focus:ring-ocean/40;
+  }
+  .label {
+    @apply mb-1 block text-sm font-semibold text-navy/80;
+  }
+}
+
+@media print {
+  .no-print { display: none !important; }
+  body { background: white !important; }
+  .tag-sheet { grid-template-columns: repeat(4, 1fr) !important; gap: 6mm !important; }
+  .tag-cell { break-inside: avoid; border: 1px solid #000 !important; }
+}
