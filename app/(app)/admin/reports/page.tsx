@@ -18,7 +18,17 @@ function Stat({ label, value, tone }: { label: string; value: string; tone?: "wa
 export default async function ReportsPage() {
   await requireAdmin();
   const supabase = await createClient();
-  const [monthly, today] = await Promise.all([supabase.rpc("monthly_report", { p_months: 6 }), supabase.rpc("today_summary")]);
+  const [monthly, today, daily] = await Promise.all([
+    supabase.rpc("monthly_report", { p_months: 6 }),
+    supabase.rpc("today_summary"),
+    supabase.rpc("daily_orders", { p_days: 14 }),
+  ]);
+  const days = ((daily.data ?? []) as any[]).map((r) => ({
+    day: String(r.day),
+    total: Number(r.total_orders),
+    fulfilled: Number(r.fulfilled),
+    sales: Number(r.sales),
+  }));
 
   const rows: MonthRow[] = (monthly.data ?? []).map((r: any) => ({
     month: r.month,
@@ -34,7 +44,7 @@ export default async function ReportsPage() {
   return (
     <div className="space-y-4">
       <h1 className="text-2xl font-bold">Reports</h1>
-      <Flash error={monthly.error?.message ?? today.error?.message} />
+      <Flash error={monthly.error?.message ?? today.error?.message ?? daily.error?.message} />
 
       <h2 className="text-lg font-bold">Today</h2>
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
@@ -43,6 +53,30 @@ export default async function ReportsPage() {
         <Stat label="Orders open" value={`${Number(t?.pending_count ?? 0)} pending · ${Number(t?.out_count ?? 0)} out`} />
         <Stat label="Unpaid, all time" value={peso(Number(t?.unpaid_total ?? 0))} tone={Number(t?.unpaid_total ?? 0) > 0 ? "warn" : undefined} />
       </div>
+
+      <h2 className="text-lg font-bold">Orders by day</h2>
+      <div className="glass overflow-x-auto rounded-2xl p-2">
+        <table className="w-full min-w-[26rem] text-left">
+          <thead>
+            <tr className="text-sm text-navy/60">
+              <th className="p-2">Date</th><th className="p-2">Orders</th><th className="p-2">Sales</th><th className="p-2">Fulfilled</th>
+            </tr>
+          </thead>
+          <tbody>
+            {days.map((d) => (
+              <tr key={d.day} className="border-t border-navy/10 tabular-nums">
+                <td className="p-2 font-semibold">{new Date(d.day + "T00:00:00").toLocaleDateString("en-PH", { weekday: "short", month: "short", day: "numeric" })}</td>
+                <td className="p-2">{d.total}</td>
+                <td className="p-2">{peso(d.sales)}</td>
+                <td className={`p-2 font-bold ${d.total > 0 && d.fulfilled < d.total ? "text-amber-700" : "text-emerald-700"}`}>
+                  {d.fulfilled} / {d.total}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <p className="text-sm text-navy/70">Grouped by the day the order was placed. Cancelled orders are not counted; sales are delivered orders only.</p>
 
       {current && (
         <>
