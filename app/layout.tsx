@@ -6,7 +6,7 @@ import { Providers } from "@/components/providers";
 const font = Figtree({ subsets: ["latin"], variable: "--font-sans" });
 
 export const metadata: Metadata = {
-  title: "Water Station",
+  title: "Albekein Water Station",
   description: "Orders, deliveries, and inventory for the refilling station",
 };
 

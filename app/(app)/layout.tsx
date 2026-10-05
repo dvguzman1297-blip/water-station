@@ -1,4 +1,4 @@
-import { Droplets, LogOut } from "lucide-react";
+import { LogOut } from "lucide-react";
 import { getProfile } from "@/lib/auth";
 import { signOut } from "@/app/actions";
 import { AppNav } from "@/components/app-nav";
@@ -11,8 +11,9 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       <header className="no-print sticky top-0 z-20 bg-navy text-white">
         <div className="mx-auto flex h-16 max-w-5xl items-center justify-between px-4">
           <div className="flex items-center gap-3">
-            <Droplets className="h-6 w-6 text-sky-300" />
-            <span className="text-lg font-bold">Water Station</span>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/logo.png" alt="" className="h-10 w-10 rounded-xl" />
+            <span className="text-lg font-bold">Albekein Water Station</span>
           </div>
           <div className="flex items-center gap-3">
             <span className="hidden text-sm text-white/70 sm:block">

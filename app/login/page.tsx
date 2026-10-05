@@ -1,4 +1,3 @@
-import { Droplets } from "lucide-react";
 import { signIn } from "@/app/actions";
 import { Button } from "@/components/ui/button";
 
@@ -8,11 +7,10 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
     <main className="grid min-h-dvh place-items-center p-5">
       <form action={signIn} className="glass w-full max-w-sm rounded-3xl p-6">
         <div className="mb-6 flex items-center gap-3">
-          <div className="grid h-14 w-14 place-items-center rounded-2xl bg-navy text-white">
-            <Droplets className="h-7 w-7" />
-          </div>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/logo.png" alt="Albekein Water Station" className="h-16 w-16 rounded-2xl" />
           <div>
-            <h1 className="text-2xl font-bold leading-tight">Water Station</h1>
+            <h1 className="text-2xl font-bold leading-tight">Albekein Water Station</h1>
             <p className="text-navy/60">Sign in to start taking orders</p>
           </div>
         </div>
