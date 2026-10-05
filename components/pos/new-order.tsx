@@ -152,7 +152,7 @@ export function NewOrder({
           <p role="alert" className="rounded-xl bg-rose-50 px-4 py-3 font-medium text-rose-900 ring-1 ring-rose-200">{error}</p>
         )}
 
-        <Button size="lg" className="w-full" onClick={submit} disabled={pending || count === 0}>
+        <Button size="lg" className="w-full" onClick={submit} loading={pending} disabled={count === 0}>
           Save order · {count} {count === 1 ? "gallon" : "gallons"} · {peso(total)}
         </Button>
       </div>

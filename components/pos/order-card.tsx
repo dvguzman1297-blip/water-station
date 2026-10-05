@@ -61,7 +61,7 @@ export function OrderCard({
       <div className="mt-3 flex flex-wrap gap-2">
         {order.status === "pending" && (
           <>
-            <Button variant="primary" className="flex-1" onClick={onDispatch} disabled={busy}>Send out for delivery</Button>
+            <Button variant="primary" className="flex-1" onClick={onDispatch} loading={busy}>Send out for delivery</Button>
             <Button variant="outline" onClick={onShowTag} aria-label="Show QR tag"><QrCode className="h-5 w-5" /></Button>
             <Button variant="ghost" onClick={onCancel} disabled={busy}>Cancel</Button>
           </>
@@ -74,7 +74,7 @@ export function OrderCard({
           </>
         )}
         {order.status === "delivered" && order.payment_status === "unpaid" && (
-          <Button variant="success" className="flex-1" onClick={onMarkPaid} disabled={busy}>Payment received</Button>
+          <Button variant="success" className="flex-1" onClick={onMarkPaid} loading={busy}>Payment received</Button>
         )}
       </div>
     </motion.li>

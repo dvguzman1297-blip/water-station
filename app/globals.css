@@ -17,6 +17,13 @@
 }
 
 @layer components {
+  .skeleton {
+    @apply relative overflow-hidden rounded-xl bg-navy/10;
+  }
+  .skeleton::after {
+    content: "";
+    @apply absolute inset-0 -translate-x-full animate-[shimmer_1.4s_infinite] bg-gradient-to-r from-transparent via-white/60 to-transparent;
+  }
   .glass {
     @apply border border-white/70 bg-white/65 shadow-[0_8px_30px_rgba(15,23,42,0.08)] backdrop-blur-xl;
   }
@@ -26,6 +33,10 @@
   .label {
     @apply mb-1 block text-sm font-semibold text-navy/80;
   }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton::after { animation: none; }
 }
 
 @media print {

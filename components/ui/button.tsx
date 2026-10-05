@@ -1,4 +1,7 @@
+"use client";
 import * as React from "react";
+import { useFormStatus } from "react-dom";
+import { Loader2 } from "lucide-react";
 import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
@@ -26,11 +29,28 @@ export const buttonVariants = cva(
 
 export interface ButtonProps
   extends React.ButtonHTMLAttributes<HTMLButtonElement>,
-    VariantProps<typeof buttonVariants> {}
+    VariantProps<typeof buttonVariants> {
+  loading?: boolean;
+}
 
 export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ className, variant, size, type = "button", ...props }, ref) => (
-    <button ref={ref} type={type} className={cn(buttonVariants({ variant, size }), className)} {...props} />
-  )
+  ({ className, variant, size, type = "button", loading, disabled, children, ...props }, ref) => {
+    // Submit buttons spin automatically while their parent form's server action runs.
+    const { pending } = useFormStatus();
+    const busy = !!loading || (type === "submit" && pending);
+    return (
+      <button
+        ref={ref}
+        type={type}
+        className={cn(buttonVariants({ variant, size }), className)}
+        disabled={disabled || busy}
+        aria-busy={busy || undefined}
+        {...props}
+      >
+        {busy && <Loader2 className="h-5 w-5 animate-spin" aria-hidden />}
+        {children}
+      </button>
+    );
+  }
 );
 Button.displayName = "Button";

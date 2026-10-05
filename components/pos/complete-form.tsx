@@ -82,8 +82,8 @@ export function CompleteForm({
         </p>
       )}
 
-      <Button variant="success" size="lg" className="w-full" onClick={submit} disabled={pending}>
-        <CheckCircle2 className="h-6 w-6" />
+      <Button variant="success" size="lg" className="w-full" onClick={submit} loading={pending}>
+        {!pending && <CheckCircle2 className="h-6 w-6" />}
         {alreadyPaid || paid ? "Mark paid & delivered" : "Mark delivered, unpaid"}
       </Button>
     </div>

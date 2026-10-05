@@ -9,6 +9,7 @@ const config: Config = {
         ocean: { DEFAULT: "#0284c7", 600: "#0369a1", 50: "#f0f9ff", 100: "#e0f2fe" },
         ok: { DEFAULT: "#10b981", 600: "#059669", 50: "#ecfdf5" },
       },
+      keyframes: { shimmer: { "100%": { transform: "translateX(100%)" } } },
       fontFamily: { sans: ["var(--font-sans)", "system-ui", "sans-serif"] },
     },
   },
