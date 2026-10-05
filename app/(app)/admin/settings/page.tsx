@@ -1,10 +1,8 @@
-import Link from "next/link";
-import { Printer } from "lucide-react";
 import { requireAdmin } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import {
-  addCategory, addProduct, addTags, createStaff, removeCategory, removeStaff,
-  setStaffRole, toggleTag, updateProduct,
+  addCategory, addProduct, createStaff, removeCategory, removeStaff,
+  setStaffRole, updateProduct,
 } from "../actions";
 import { Button } from "@/components/ui/button";
 import { Flash } from "@/components/flash";
@@ -28,12 +26,11 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
   const me = await requireAdmin();
   const { error } = await searchParams;
   const supabase = await createClient();
-  const [products, items, cats, staff, tags] = await Promise.all([
+  const [products, items, cats, staff] = await Promise.all([
     supabase.from("products").select("*").order("sort_order"),
     supabase.from("inventory_items").select("id, item_name").order("item_name"),
     supabase.from("expense_categories").select("name").order("name"),
     supabase.from("profiles").select("id, full_name, role").order("full_name"),
-    supabase.from("qr_tags").select("tag_code, enabled, active_order_id").order("tag_code"),
   ]);
 
   return (
@@ -134,38 +131,6 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
           </select>
           <Button type="submit" className="sm:col-span-2">Create account</Button>
         </form>
-      </Section>
-
-      <Section title="QR tags" hint="Reusable laminated tags. Print the sheet, laminate, and number-match each one.">
-        <div className="flex flex-wrap gap-2">
-          <Link href="/admin/tags/print" className="inline-flex h-12 items-center gap-2 rounded-xl bg-navy px-5 font-semibold text-white">
-            <Printer className="h-5 w-5" /> Print tag sheet
-          </Link>
-          <form action={addTags} className="flex items-center gap-2">
-            <input name="from" type="number" min="1" defaultValue={51} aria-label="First tag number" className="field w-24" />
-            <span>to</span>
-            <input name="to" type="number" min="1" defaultValue={60} aria-label="Last tag number" className="field w-24" />
-            <Button type="submit" variant="outline">Add tags</Button>
-          </form>
-        </div>
-        <ul className="grid grid-cols-2 gap-2 sm:grid-cols-4 md:grid-cols-5">
-          {(tags.data ?? []).map((t) => {
-            const inUse = !!t.active_order_id;
-            return (
-              <li key={t.tag_code} className={cn("glass rounded-xl p-2 text-center", !t.enabled && "opacity-50")}>
-                <p className="font-bold">{t.tag_code}</p>
-                <p className={cn("text-xs font-semibold", inUse ? "text-sky-700" : "text-navy/60")}>
-                  {!t.enabled ? "Disabled" : inUse ? "In use" : "Free"}
-                </p>
-                <form action={toggleTag}>
-                  <input type="hidden" name="tag_code" value={t.tag_code} />
-                  <input type="hidden" name="enabled" value={String(!t.enabled)} />
-                  <button className="mt-1 h-10 w-full rounded-lg text-xs font-semibold underline">{t.enabled ? "Disable" : "Enable"}</button>
-                </form>
-              </li>
-            );
-          })}
-        </ul>
       </Section>
     </div>
   );

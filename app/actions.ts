@@ -48,7 +48,7 @@ export async function createOrder(input: {
   customerId: string | null;
   items: { code: string; qty: number }[];
   paid: boolean;
-}): Promise<Result<{ id: string }>> {
+}): Promise<Result<{ id: string; tag: string; orderNumber: number }>> {
   const items = input.items.filter((i) => i.qty > 0);
   if (!items.length) return fail("Add at least one gallon.");
   const supabase = await createClient();
@@ -59,15 +59,9 @@ export async function createOrder(input: {
   });
   if (error) return fail(error.message);
   revalidatePath("/");
-  return { ok: true, data: { id: data as string } };
-}
-
-export async function assignTag(orderId: string, rawTag: string): Promise<Result> {
-  const supabase = await createClient();
-  const { error } = await supabase.rpc("assign_tag", { p_order_id: orderId, p_tag: normalizeTag(rawTag) });
-  if (error) return fail(error.message);
-  revalidatePath("/");
-  return { ok: true, data: null };
+  const id = data as string;
+  const { data: row } = await supabase.from("orders").select("order_number, qr_tag_id").eq("id", id).single();
+  return { ok: true, data: { id, tag: row?.qr_tag_id ?? "", orderNumber: row?.order_number ?? 0 } };
 }
 
 export async function scanTag(rawTag: string): Promise<Result<ScanInfo>> {

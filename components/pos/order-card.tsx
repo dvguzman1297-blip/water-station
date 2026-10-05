@@ -9,7 +9,7 @@ import type { OrderRow } from "@/lib/types";
 export function OrderCard({
   order,
   names,
-  onLinkTag,
+  onShowTag,
   onDispatch,
   onDeliver,
   onMarkPaid,
@@ -18,7 +18,7 @@ export function OrderCard({
 }: {
   order: OrderRow;
   names: Record<string, string>;
-  onLinkTag: () => void;
+  onShowTag: () => void;
   onDispatch: () => void;
   onDeliver: () => void;
   onMarkPaid: () => void;
@@ -61,17 +61,15 @@ export function OrderCard({
       <div className="mt-3 flex flex-wrap gap-2">
         {order.status === "pending" && (
           <>
-            {order.qr_tag_id ? (
-              <Button variant="primary" className="flex-1" onClick={onDispatch} disabled={busy}>Send out for delivery</Button>
-            ) : (
-              <Button variant="primary" className="flex-1" onClick={onLinkTag}><QrCode className="h-5 w-5" /> Link a tag</Button>
-            )}
+            <Button variant="primary" className="flex-1" onClick={onDispatch} disabled={busy}>Send out for delivery</Button>
+            <Button variant="outline" onClick={onShowTag} aria-label="Show QR tag"><QrCode className="h-5 w-5" /></Button>
             <Button variant="ghost" onClick={onCancel} disabled={busy}>Cancel</Button>
           </>
         )}
         {order.status === "out_for_delivery" && (
           <>
             <Button variant="success" className="flex-1" onClick={onDeliver}>Delivered</Button>
+            <Button variant="outline" onClick={onShowTag} aria-label="Show QR tag"><QrCode className="h-5 w-5" /></Button>
             <Button variant="ghost" onClick={onCancel} disabled={busy}>Cancel</Button>
           </>
         )}

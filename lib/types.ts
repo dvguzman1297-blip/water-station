@@ -17,8 +17,9 @@ export type Customer = { id: string; name: string; phone: string | null; address
 export type PublicProduct = { code: string; name: string; price: number };
 
 export type ScanInfo = {
-  action: "unknown" | "free" | "dispatched" | "confirm_delivery";
+  action: "unknown" | "free" | "closed" | "dispatched" | "confirm_delivery";
   tag: string;
+  status?: Status;
   order_id?: string;
   order_number?: number;
   customer?: string;

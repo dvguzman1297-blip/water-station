@@ -131,26 +131,6 @@ export async function removeStaff(fd: FormData) {
   done("/admin/settings", error?.message);
 }
 
-// ───────── QR tag registry ─────────
-export async function addTags(fd: FormData) {
-  const { supabase } = await adminCtx();
-  const from = Math.max(1, Math.floor(num(fd.get("from"))));
-  const to = Math.min(999, Math.floor(num(fd.get("to"))));
-  if (to < from) done("/admin/settings", "The last number must be at least the first.");
-  const rows = Array.from({ length: to - from + 1 }, (_, i) => ({ tag_code: `TAG-${String(from + i).padStart(3, "0")}` }));
-  const { error } = await supabase.from("qr_tags").upsert(rows, { onConflict: "tag_code", ignoreDuplicates: true });
-  done("/admin/settings", error?.message);
-}
-
-export async function toggleTag(fd: FormData) {
-  const { supabase } = await adminCtx();
-  const { error } = await supabase
-    .from("qr_tags")
-    .update({ enabled: str(fd.get("enabled")) === "true" })
-    .eq("tag_code", str(fd.get("tag_code")));
-  done("/admin/settings", error?.message);
-}
-
 // ───────── Inventory ─────────
 export async function saveInventoryItem(fd: FormData) {
   const { supabase } = await adminCtx();

@@ -17,7 +17,7 @@ export function NewOrder({
   customers: Customer[];
   products: PublicProduct[];
   onClose: () => void;
-  onCreated: (orderId: string, linkTag: boolean) => void;
+  onCreated: (tag: string, orderNumber: number, customer?: string) => void;
 }) {
   const [query, setQuery] = useState("");
   const [customerId, setCustomerId] = useState<string | null>(null);
@@ -27,7 +27,6 @@ export function NewOrder({
   const [newAddress, setNewAddress] = useState("");
   const [qty, setQty] = useState<Record<string, number>>({});
   const [paid, setPaid] = useState(false);
-  const [linkTag, setLinkTag] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [pending, start] = useTransition();
   const [localCustomers, setLocalCustomers] = useState<Customer[]>([]);
@@ -69,7 +68,7 @@ export function NewOrder({
         paid,
       });
       if (!res.ok) return setError(res.error);
-      onCreated(res.data.id, linkTag);
+      onCreated(res.data.tag, res.data.orderNumber, chosen?.name);
     });
   }
 
@@ -138,7 +137,7 @@ export function NewOrder({
           ))}
         </section>
 
-        <section className="grid grid-cols-2 gap-2">
+        <section className="grid gap-2">
           <button
             role="switch"
             aria-checked={paid}
@@ -146,14 +145,6 @@ export function NewOrder({
             className={cn("flex min-h-14 items-center gap-2 rounded-xl px-3 font-semibold ring-1", paid ? "bg-ok-50 text-emerald-900 ring-emerald-300" : "bg-white ring-navy/15")}
           >
             {paid && <Check className="h-5 w-5" />} Already paid
-          </button>
-          <button
-            role="switch"
-            aria-checked={linkTag}
-            onClick={() => setLinkTag(!linkTag)}
-            className={cn("flex min-h-14 items-center gap-2 rounded-xl px-3 font-semibold ring-1", linkTag ? "bg-sky-50 text-sky-900 ring-sky-300" : "bg-white ring-navy/15")}
-          >
-            {linkTag && <Check className="h-5 w-5" />} Scan tag next
           </button>
         </section>
 

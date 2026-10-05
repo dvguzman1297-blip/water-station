@@ -5,7 +5,7 @@ Orders, deliveries, and inventory for a water refilling station. Next.js (App Ro
 ## Setup
 
 1. Create a Supabase project.
-2. In the SQL editor, run `supabase/migrations/0001_init.sql`.
+2. In the SQL editor, run `supabase/migrations/0001_init.sql`, then `0002_order_tags.sql`.
 3. In Authentication > Users, create your own user, then run:
    ```sql
    update public.profiles set role = 'admin'
@@ -13,7 +13,7 @@ Orders, deliveries, and inventory for a water refilling station. Next.js (App Ro
    ```
 4. Copy `.env.example` to `.env.local` and fill in the three values. The service-role key is only used by the "Create account" and "Remove" actions in Settings.
 5. `npm install` then `npm run dev`.
-6. Open Settings and replace the placeholder prices and costs with your real ones. Print the tag sheet from Settings > QR tags.
+6. Open Settings and replace the placeholder prices and costs with your real ones.
 7. Deploy to Vercel and add the same three environment variables.
 
 Camera scanning needs HTTPS (Vercel provides it) or `localhost`.
@@ -22,20 +22,22 @@ Camera scanning needs HTTPS (Vercel provides it) or `localhost`.
 
 All order changes go through Postgres functions, so staff cannot skip steps from the browser.
 
+Every order gets its own QR tag (`ORD-0042`) the moment it is saved. The app shows it right away: scan it off the screen or tap Print and attach the label to the order. Status can also be changed by hand with the buttons on the order card.
+
 | Scan | Result |
 | --- | --- |
-| Tag not registered | Error |
-| Tag free | Pick a pending order to link it to |
 | Tag on a pending order | Order becomes Out for delivery |
-| Tag on an out-for-delivery order | Confirm dialog: empties returned, payment received, then Delivered; tag is freed |
+| Tag on an out-for-delivery order | Confirm dialog: empties returned, payment received, then Delivered |
+| Tag of a delivered or cancelled order | "Already delivered/cancelled" |
+| Unknown tag | Error |
 
-A tag can only be linked to one live order (unique column on `qr_tags.active_order_id`).
+You can also type the order number in the scan dialog if the camera is not available.
 
 ## Changes from the original spec
 
 - `products` table holds prices and the four cost parts; `create_order` snapshots cost into `order_costs`.
 - Cost data (`products`, `order_costs`, `expenses`, reports) is admin-only through RLS. Staff read prices through the `products_public` view.
-- `qr_tags` registry guarantees one live order per tag. Tags can be disabled.
+- `qr_tags` holds one generated tag per order; a unique column guarantees one live order per tag.
 - `dispatched_at`, `delivered_at`, `paid_at` timestamps added.
 - "Pay later" is supported: the order is Delivered but Unpaid and stays in the Delivered tab until marked paid.
 - `customers.container_balance` changes on completion by (containers delivered minus empties returned).

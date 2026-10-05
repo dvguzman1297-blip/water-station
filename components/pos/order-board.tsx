@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils";
 import { OrderCard } from "./order-card";
 import { NewOrder } from "./new-order";
 import { ScanFlow } from "./scan-flow";
+import { TagModal } from "./tag-modal";
 import { CompleteForm } from "./complete-form";
 import { cancelOrder, markPaid, scanTag } from "@/app/actions";
 import { scanFeedback } from "@/lib/feedback";
@@ -23,7 +24,8 @@ const TABS: { key: "pending" | "out_for_delivery" | "delivered"; label: string }
 type Overlay =
   | { kind: "none" }
   | { kind: "new" }
-  | { kind: "scan"; presetOrderId?: string }
+  | { kind: "scan" }
+  | { kind: "tag"; tag: string; orderNumber: number; customer?: string }
   | { kind: "deliver"; orderId: string };
 
 export function OrderBoard({
@@ -102,7 +104,7 @@ export function OrderBoard({
           <Plus className="h-6 w-6" /> New order
         </Button>
         <Button size="lg" variant="outline" onClick={() => setOverlay({ kind: "scan" })}>
-          <ScanLine className="h-6 w-6" /> Scan tag
+          <ScanLine className="h-6 w-6" /> Scan order
         </Button>
       </div>
 
@@ -140,7 +142,7 @@ export function OrderBoard({
               order={o}
               names={names}
               busy={pending}
-              onLinkTag={() => setOverlay({ kind: "scan", presetOrderId: o.id })}
+              onShowTag={() => setOverlay({ kind: "tag", tag: o.qr_tag_id!, orderNumber: o.order_number, customer: o.customers?.name })}
               onDispatch={() =>
                 run(async () => {
                   const r = await scanTag(o.qr_tag_id!);
@@ -175,14 +177,14 @@ export function OrderBoard({
           customers={customers}
           products={products}
           onClose={close}
-          onCreated={(id, linkTag) => {
+          onCreated={(tag, orderNumber, customer) => {
             router.refresh();
-            setOverlay(linkTag ? { kind: "scan", presetOrderId: id } : { kind: "none" });
-            if (!linkTag) setToast("Order saved");
+            setOverlay({ kind: "tag", tag, orderNumber, customer });
           }}
         />
       )}
-      {overlay.kind === "scan" && <ScanFlow orders={orders} presetOrderId={overlay.presetOrderId} onClose={close} />}
+      {overlay.kind === "scan" && <ScanFlow onClose={close} />}
+      {overlay.kind === "tag" && <TagModal tag={overlay.tag} orderNumber={overlay.orderNumber} customer={overlay.customer} onClose={close} />}
       {overlay.kind === "deliver" && deliverOrder && (
         <Modal open onClose={close} title="Confirm delivery">
           <CompleteForm

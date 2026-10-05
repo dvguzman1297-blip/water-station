@@ -1,43 +1,27 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
-import { CheckCircle2, ScanLine } from "lucide-react";
+import { CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Modal } from "@/components/ui/modal";
 import { CompleteForm } from "./complete-form";
-import { assignTag, scanTag } from "@/app/actions";
+import { scanTag } from "@/app/actions";
 import { scanFeedback } from "@/lib/feedback";
 import { normalizeTag } from "@/lib/utils";
-import type { OrderRow, ScanInfo } from "@/lib/types";
+import type { ScanInfo } from "@/lib/types";
 
 type Phase =
   | { kind: "scan" }
-  | { kind: "free"; tag: string }
   | { kind: "message"; text: string }
   | { kind: "confirm"; info: ScanInfo };
 
-/**
- * Two modes:
- *  - scan (no presetOrderId): the real scan-to-state step. Free tag -> pick an order; linked tag -> advance it.
- *  - assign (presetOrderId): only links the scanned tag to that order. It never advances another order.
- */
-export function ScanFlow({
-  orders,
-  presetOrderId,
-  onClose,
-}: {
-  orders: OrderRow[];
-  presetOrderId?: string;
-  onClose: () => void;
-}) {
+/** Scan an order tag: pending -> out for delivery; out for delivery -> confirm delivery. */
+export function ScanFlow({ onClose }: { onClose: () => void }) {
   const [phase, setPhase] = useState<Phase>({ kind: "scan" });
   const [error, setError] = useState<string | null>(null);
   const [camError, setCamError] = useState<string | null>(null);
   const [manual, setManual] = useState("");
   const busy = useRef(false);
   const lastCode = useRef<{ code: string; at: number } | null>(null);
-
-  const presetOrder = presetOrderId ? orders.find((o) => o.id === presetOrderId) : undefined;
-  const untagged = orders.filter((o) => o.status === "pending" && !o.qr_tag_id);
 
   async function handleCode(raw: string) {
     const code = normalizeTag(raw);
@@ -48,17 +32,6 @@ export function ScanFlow({
     busy.current = true;
     setError(null);
     try {
-      if (presetOrderId) {
-        const res = await assignTag(presetOrderId, code);
-        if (!res.ok) {
-          scanFeedback("error");
-          setError(res.error);
-          return;
-        }
-        scanFeedback("ok");
-        setPhase({ kind: "message", text: `${code} linked to order #${presetOrder?.order_number ?? ""}`.trim() });
-        return;
-      }
       const res = await scanTag(code);
       if (!res.ok) {
         scanFeedback("error");
@@ -66,12 +39,12 @@ export function ScanFlow({
         return;
       }
       const info = res.data;
-      if (info.action === "unknown") {
+      if (info.action === "unknown" || info.action === "free") {
         scanFeedback("error");
-        setError(`${info.tag} is not a registered tag.`);
-      } else if (info.action === "free") {
-        scanFeedback("ok");
-        setPhase({ kind: "free", tag: info.tag });
+        setError(`${info.tag} is not an order tag.`);
+      } else if (info.action === "closed") {
+        scanFeedback("error");
+        setError(`${info.tag} is already ${info.status === "cancelled" ? "cancelled" : "delivered"}.`);
       } else if (info.action === "dispatched") {
         scanFeedback("ok");
         setPhase({ kind: "message", text: `Order #${info.order_number} for ${info.customer} is out for delivery` });
@@ -120,8 +93,7 @@ export function ScanFlow({
     return () => clearTimeout(t);
   }, [phase, onClose]);
 
-  const title =
-    phase.kind === "confirm" ? "Confirm delivery" : presetOrder ? `Link tag to order #${presetOrder.order_number}` : "Scan a tag";
+  const title = phase.kind === "confirm" ? "Confirm delivery" : "Scan order tag";
 
   return (
     <Modal open onClose={onClose} title={title}>
@@ -138,7 +110,7 @@ export function ScanFlow({
             onSubmit={(e) => {
               e.preventDefault();
               if (manual.trim()) {
-                const v = /^\d+$/.test(manual.trim()) ? `TAG-${manual.trim().padStart(3, "0")}` : manual;
+                const v = /^\d+$/.test(manual.trim()) ? `ORD-${manual.trim().padStart(4, "0")}` : manual;
                 handleCode(v);
                 setManual("");
               }
@@ -148,43 +120,13 @@ export function ScanFlow({
             <input
               value={manual}
               onChange={(e) => setManual(e.target.value)}
-              placeholder="Tag number, e.g. 5"
+              placeholder="Order number, e.g. 42"
               inputMode="numeric"
-              aria-label="Tag number"
+              aria-label="Order number"
               className="field"
             />
             <Button type="submit" variant="outline">Go</Button>
           </form>
-        </div>
-      )}
-
-      {phase.kind === "free" && (
-        <div className="space-y-3">
-          <p className="rounded-xl bg-sky-50 px-4 py-3 font-semibold text-sky-900 ring-1 ring-sky-200">
-            {phase.tag} is free. Pick the order to link it to.
-          </p>
-          {untagged.length === 0 && <p className="text-navy/60">No pending orders need a tag.</p>}
-          {untagged.map((o) => (
-            <Button
-              key={o.id}
-              variant="outline"
-              size="lg"
-              className="w-full justify-between"
-              onClick={async () => {
-                const res = await assignTag(o.id, phase.tag);
-                if (!res.ok) return setError(res.error), scanFeedback("error");
-                scanFeedback("ok");
-                setPhase({ kind: "message", text: `${phase.tag} linked to order #${o.order_number}` });
-              }}
-            >
-              <span>#{o.order_number} {o.customers?.name ?? "Walk-in"}</span>
-              <ScanLine className="h-5 w-5" />
-            </Button>
-          ))}
-          {error && <p role="alert" className="font-medium text-rose-700">{error}</p>}
-          <Button variant="ghost" className="w-full" onClick={() => setPhase({ kind: "scan" })}>
-            Scan another tag
-          </Button>
         </div>
       )}
 
