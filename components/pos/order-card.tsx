@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { MapPin, PackageX, Phone, QrCode, Tag } from "lucide-react";
+import { MapPin, Phone, QrCode, Tag } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PaymentBadge, StatusBadge } from "@/components/ui/status-badge";
 import { peso } from "@/lib/utils";
@@ -38,7 +38,7 @@ export function OrderCard({
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, scale: 0.97 }}
-      className="glass rounded-2xl p-4"
+      className="glass flex flex-col rounded-2xl p-4"
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
@@ -65,25 +65,26 @@ export function OrderCard({
       </div>
 
       {owed > 0 && (
-        <div className="mt-3 rounded-xl bg-amber-50 p-3 ring-1 ring-amber-200">
-          <p className="flex items-center gap-2 font-bold text-amber-900">
-            <PackageX className="h-5 w-5" /> {owed} of {ordered} {owed === 1 ? "gallon" : "gallons"} not returned
+        <div className="mt-auto space-y-3 pt-3">
+          <p className="font-semibold">
+            {owed} of {ordered} not returned
+            {(order.empties_returned ?? 0) > 0 && <span className="font-normal text-navy/60"> · {order.empties_returned} back already</span>}
           </p>
-          <div className="mt-2 flex items-center gap-2">
+          <div className="flex items-center gap-2">
             <input
               type="number" min={1} max={owed} value={Math.min(returned, owed)}
               onChange={(e) => setReturned(Math.min(owed, Math.max(1, Math.round(Number(e.target.value) || 1))))}
               aria-label={`Gallons returned for order ${order.order_number}`}
-              className="field !h-11 !w-20 text-center"
+              className="field !h-10 !w-20 text-center"
             />
-            <Button variant="outline" className="flex-1" onClick={() => onSettle(Math.min(returned, owed))} disabled={busy}>
-              Gallons returned
+            <Button size="sm" className="flex-1" onClick={() => onSettle(Math.min(returned, owed))} disabled={busy}>
+              Settle returned gallons
             </Button>
           </div>
         </div>
       )}
 
-      <div className="mt-3 flex flex-wrap gap-2">
+      <div className={`flex flex-wrap gap-2 empty:hidden ${owed > 0 ? "mt-3" : "mt-auto pt-3"}`}>
         {order.status === "pending" && (
           <>
             <Button variant="primary" className="flex-1" onClick={onDispatch} loading={busy}>Send out for delivery</Button>
