@@ -99,3 +99,11 @@ export async function cancelOrder(orderId: string): Promise<Result> {
   revalidatePath("/");
   return { ok: true, data: null };
 }
+
+export async function settleOrderContainers(orderId: string, qty: number): Promise<Result> {
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("settle_order_containers", { p_order_id: orderId, p_qty: Math.round(qty) });
+  if (error) return fail(error.message);
+  revalidatePath("/");
+  return { ok: true, data: null };
+}

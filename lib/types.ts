@@ -9,6 +9,7 @@ export type OrderRow = {
   payment_status: PaymentStatus;
   qr_tag_id: string | null;
   created_at: string;
+  empties_returned: number | null;
   customers: { name: string; phone: string | null; address: string | null } | null;
   order_items: { container_type: string; quantity: number }[];
 };

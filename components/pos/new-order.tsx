@@ -1,6 +1,6 @@
 "use client";
 import { useMemo, useState, useTransition } from "react";
-import { Check, Search, UserPlus } from "lucide-react";
+import { Banknote, Check, Footprints, Search, UserPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Modal } from "@/components/ui/modal";
 import { Counter } from "./counter";
@@ -21,6 +21,7 @@ export function NewOrder({
 }) {
   const [query, setQuery] = useState("");
   const [customerId, setCustomerId] = useState<string | null>(null);
+  const [walkIn, setWalkIn] = useState(false);
   const [adding, setAdding] = useState(false);
   const [newName, setNewName] = useState("");
   const [newPhone, setNewPhone] = useState("");
@@ -77,7 +78,18 @@ export function NewOrder({
       <div className="space-y-5">
         <section aria-label="Customer">
           <p className="label">Customer</p>
-          {chosen && !adding ? (
+          {walkIn && !adding ? (
+            <div className="flex items-center justify-between rounded-2xl bg-white/70 p-3 ring-1 ring-navy/10">
+              <div className="flex items-center gap-3">
+                <Footprints className="h-6 w-6 text-navy/60" />
+                <div>
+                  <p className="text-lg font-bold">Walk-in</p>
+                  <p className="text-sm text-navy/60">No name recorded</p>
+                </div>
+              </div>
+              <Button variant="outline" size="sm" onClick={() => setWalkIn(false)}>Change</Button>
+            </div>
+          ) : chosen && !adding ? (
             <div className="flex items-center justify-between rounded-2xl bg-sky-50 p-3 ring-1 ring-sky-200">
               <div>
                 <p className="text-lg font-bold">{chosen.name}</p>
@@ -105,20 +117,20 @@ export function NewOrder({
                 {matches.map((c) => (
                   <button
                     key={c.id}
-                    onClick={() => setCustomerId(c.id)}
+                    onClick={() => { setCustomerId(c.id); setWalkIn(false); }}
                     className="min-h-14 rounded-xl bg-white px-3 py-2 text-left font-semibold shadow-sm ring-1 ring-navy/10 active:scale-[.98]"
                   >
                     {c.name}
                   </button>
                 ))}
                 <button
-                  onClick={() => { setAdding(true); setNewName(query); }}
+                  onClick={() => { setAdding(true); setWalkIn(false); setNewName(query); }}
                   className="flex min-h-14 items-center gap-2 rounded-xl border-2 border-dashed border-ocean/50 px-3 font-semibold text-ocean"
                 >
                   <UserPlus className="h-5 w-5" /> New customer
                 </button>
               </div>
-              <button className="mt-2 text-sm font-medium text-navy/60 underline" onClick={() => setCustomerId(null)}>
+              <button className="mt-2 text-sm font-medium text-navy/60 underline" onClick={() => { setCustomerId(null); setWalkIn(true); }}>
                 Skip: walk-in with no name
               </button>
             </>
@@ -137,15 +149,33 @@ export function NewOrder({
           ))}
         </section>
 
-        <section className="grid gap-2">
-          <button
-            role="switch"
-            aria-checked={paid}
-            onClick={() => setPaid(!paid)}
-            className={cn("flex min-h-14 items-center gap-2 rounded-xl px-3 font-semibold ring-1", paid ? "bg-ok-50 text-emerald-900 ring-emerald-300" : "bg-white ring-navy/15")}
-          >
-            {paid && <Check className="h-5 w-5" />} Already paid
-          </button>
+        <section aria-label="Payment">
+          <p className="label">Payment</p>
+          <div role="radiogroup" aria-label="Payment" className="grid grid-cols-2 gap-2">
+            {[
+              { value: false, title: "Pay on delivery", hint: "Collect when delivered", icon: Banknote },
+              { value: true, title: "Paid now", hint: "Customer already paid", icon: Check },
+            ].map(({ value, title, hint, icon: Icon }) => (
+              <button
+                key={title}
+                role="radio"
+                aria-checked={paid === value}
+                onClick={() => setPaid(value)}
+                className={cn(
+                  "flex min-h-16 items-center gap-3 rounded-xl px-3 text-left ring-1 transition",
+                  paid === value
+                    ? value ? "bg-ok-50 text-emerald-900 ring-2 ring-emerald-500" : "bg-sky-50 text-navy ring-2 ring-ocean"
+                    : "bg-white text-navy/70 ring-navy/15 hover:bg-white/80"
+                )}
+              >
+                <Icon className="h-5 w-5 shrink-0" />
+                <span>
+                  <span className="block font-bold">{title}</span>
+                  <span className="block text-xs font-medium opacity-80">{hint}</span>
+                </span>
+              </button>
+            ))}
+          </div>
         </section>
 
         {error && (

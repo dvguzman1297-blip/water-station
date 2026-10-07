@@ -20,7 +20,7 @@ export function AppNav({ isAdmin }: { isAdmin: boolean }) {
   return (
     <nav
       aria-label="Main"
-      className="no-print glass fixed inset-x-0 bottom-0 z-30 flex justify-around border-x-0 border-b-0 px-1 pb-[env(safe-area-inset-bottom)] lg:static lg:mx-auto lg:mb-4 lg:max-w-5xl lg:justify-start lg:gap-2 lg:rounded-2xl lg:border lg:p-2"
+      className="no-print glass fixed inset-x-0 bottom-0 z-30 flex justify-around border-x-0 border-b-0 px-1 pb-[env(safe-area-inset-bottom)] lg:static lg:mx-auto lg:mb-4 lg:max-w-5xl lg:gap-2 lg:rounded-2xl lg:border lg:p-2"
     >
       {items.map(({ href, label, icon: Icon }) => {
         const active = href === "/" ? path === "/" : path.startsWith(href);
@@ -30,7 +30,7 @@ export function AppNav({ isAdmin }: { isAdmin: boolean }) {
             href={href}
             aria-current={active ? "page" : undefined}
             className={cn(
-              "flex min-h-14 flex-1 flex-col items-center justify-center gap-0.5 rounded-xl px-2 text-xs font-semibold lg:flex-none lg:flex-row lg:gap-2 lg:px-4 lg:text-sm",
+              "flex min-h-14 flex-1 flex-col items-center justify-center gap-0.5 rounded-xl px-2 text-xs font-semibold lg:flex-row lg:gap-2 lg:px-4 lg:text-sm",
               active ? "bg-navy text-white" : "text-navy/70 hover:bg-navy/5"
             )}
           >

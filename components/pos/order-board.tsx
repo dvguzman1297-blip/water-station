@@ -11,7 +11,7 @@ import { NewOrder } from "./new-order";
 import { ScanFlow } from "./scan-flow";
 import { TagModal } from "./tag-modal";
 import { CompleteForm } from "./complete-form";
-import { cancelOrder, markPaid, scanTag } from "@/app/actions";
+import { cancelOrder, markPaid, scanTag, settleOrderContainers } from "@/app/actions";
 import { scanFeedback } from "@/lib/feedback";
 import type { Customer, OrderRow, PublicProduct, Status } from "@/lib/types";
 
@@ -70,8 +70,11 @@ export function OrderBoard({
   const visible = useMemo(() => {
     const list = orders.filter((o) => o.status === tab);
     if (tab === "delivered") {
-      // unpaid first so nobody forgets to collect
-      return [...list].sort((a, b) => Number(b.payment_status === "unpaid") - Number(a.payment_status === "unpaid"));
+      // unpaid first, then unreturned gallons, so nobody forgets to collect
+      const open = (o: OrderRow) =>
+        Number(o.payment_status === "unpaid") * 2 +
+        Number(!!o.customers && o.order_items.reduce((n, i) => n + i.quantity, 0) > (o.empties_returned ?? Infinity));
+      return [...list].sort((a, b) => open(b) - open(a));
     }
     return tab === "pending" ? [...list].reverse() : list;
   }, [orders, tab]);
@@ -152,6 +155,7 @@ export function OrderBoard({
               }
               onDeliver={() => setOverlay({ kind: "deliver", orderId: o.id })}
               onMarkPaid={() => run(() => markPaid(o.id), `Order #${o.order_number} marked paid`)}
+              onSettle={(qty) => run(() => settleOrderContainers(o.id, qty), `Order #${o.order_number}: ${qty} returned`)}
               onCancel={() => {
                 if (confirm(`Cancel order #${o.order_number}?`)) run(() => cancelOrder(o.id), `Order #${o.order_number} cancelled`);
               }}
