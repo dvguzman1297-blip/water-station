@@ -24,7 +24,7 @@ export const getCustomerList = unstable_cache(
   async () => {
     const { data, error } = await createAdminClient()
       .from("customers")
-      .select("id, name, phone, address")
+      .select("id, name")
       .order("name")
       .limit(1000);
     if (error) throw new Error(error.message);

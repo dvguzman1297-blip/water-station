@@ -1,10 +1,11 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BarChart3, Boxes, ClipboardList, Receipt, Settings, TrendingUp } from "lucide-react";
+import { BarChart3, Boxes, ClipboardList, Receipt, Settings, TrendingUp, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-const STAFF = [{ href: "/", label: "Orders", icon: ClipboardList }];
+const ORDERS = { href: "/", label: "Orders", icon: ClipboardList };
+const CUSTOMERS = { href: "/customers", label: "Customers", icon: Users };
 const ADMIN = [
   { href: "/admin/reports", label: "Reports", icon: BarChart3 },
   { href: "/admin/margins", label: "Margins", icon: TrendingUp },
@@ -13,9 +14,10 @@ const ADMIN = [
   { href: "/admin/settings", label: "Settings", icon: Settings },
 ];
 
-export function AppNav() {
+export function AppNav({ isAdmin }: { isAdmin: boolean }) {
   const path = usePathname();
-  const items = [...STAFF, ...ADMIN];
+  // Admins manage customers from Settings; staff get their own names-only page.
+  const items = isAdmin ? [ORDERS, ...ADMIN] : [ORDERS, CUSTOMERS];
   return (
     <nav
       aria-label="Main"

@@ -1,19 +1,17 @@
 import Link from "next/link";
-import { BarChart3, PackageX, Truck, XCircle } from "lucide-react";
-import { requireStaff } from "@/lib/auth";
+import { BarChart3, PackageX, Truck } from "lucide-react";
+import { requireAdmin } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { ReportCharts, type MonthRow } from "@/components/report-charts";
 import { SectionNav } from "@/components/section-nav";
 import { Flash } from "@/components/flash";
-import { deleteOrder, settleContainers, settleOrderContainers } from "../actions";
+import { settleContainers, settleOrderContainers } from "../actions";
 import { Button } from "@/components/ui/button";
-import { ConfirmDelete } from "@/components/confirm-delete";
 import { peso } from "@/lib/utils";
 
 const TABS = [
   { id: "overview", label: "Overview", icon: BarChart3 },
   { id: "daily", label: "Orders by day", icon: Truck },
-  { id: "cancelled", label: "Cancelled orders", icon: XCircle },
   { id: "gallons", label: "Unreturned gallons", icon: PackageX },
 ] as const;
 
@@ -38,7 +36,7 @@ const shiftDay = (iso: string, by: number) => {
 const PRESETS = [{ label: "7 days", days: 7 }, { label: "14 days", days: 14 }, { label: "30 days", days: 30 }, { label: "90 days", days: 90 }];
 
 export default async function ReportsPage({ searchParams }: { searchParams: Promise<{ from?: string; to?: string; tab?: string; error?: string }> }) {
-  await requireStaff();
+  await requireAdmin();
   const sp = await searchParams;
   const tab = TABS.find((t) => t.id === sp.tab)?.id ?? "overview";
   const today0 = manilaToday();
@@ -52,27 +50,18 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
   const empty = { data: null, error: null } as { data: any; error: { message: string } | null };
 
   // Only load what the open tab shows.
-  const [monthly, today, daily, cancelled, owing, prods, owingOrders] = await Promise.all([
+  const [monthly, today, daily, owing, prods, owingOrders] = await Promise.all([
     tab === "overview" ? supabase.rpc("monthly_report", { p_months: 6 }) : empty,
     tab === "overview" ? supabase.rpc("today_summary") : empty,
     tab === "daily" ? supabase.rpc("daily_orders_range", { p_from: from, p_to: to }) : empty,
-    tab === "cancelled"
-      ? supabase
-          .from("orders")
-          .select("id, order_number, created_at, total_amount, payment_status, customers(name), order_items(container_type, quantity)")
-          .eq("status", "cancelled")
-          .gte("created_at", `${from}T00:00:00+08:00`)
-          .lt("created_at", `${shiftDay(to, 1)}T00:00:00+08:00`)
-          .order("created_at", { ascending: false })
-      : empty,
     tab === "gallons"
-      ? supabase.from("customers").select("id, name, phone, address, container_balance").gt("container_balance", 0)
+      ? supabase.from("customers").select("id, name, container_balance, customer_details(phone, address)").gt("container_balance", 0)
       : empty,
-    tab === "cancelled" || tab === "gallons" ? supabase.from("products").select("code, name") : empty,
+    tab === "gallons" ? supabase.from("products").select("code, name") : empty,
     tab === "gallons"
       ? supabase
           .from("orders")
-          .select("id, order_number, delivered_at, empties_returned, customer_id, customers!inner(name, phone, container_balance), order_items(container_type, quantity)")
+          .select("id, order_number, delivered_at, empties_returned, customer_id, customers!inner(name, container_balance, customer_details(phone)), order_items(container_type, quantity)")
           .eq("status", "delivered")
           .gt("customers.container_balance", 0)
           .order("delivered_at", { ascending: true })
@@ -94,7 +83,6 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
     .map((c) => ({ ...c, earlier: Number(c.container_balance) - (tiedByCustomer.get(c.id) ?? 0) }))
     .filter((c) => c.earlier > 0);
   const daysSince = (iso: string) => Math.max(0, Math.floor((Date.now() - new Date(iso).getTime()) / 86400000));
-  const cancelledRows = (cancelled.data ?? []) as any[];
   const days = ((daily.data ?? []) as any[]).map((r) => ({
     day: String(r.day),
     total: Number(r.total_orders),
@@ -111,7 +99,7 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
   }));
   const t = (today.data as any[] | null)?.[0];
   const current = rows[rows.length - 1];
-  const loadError = [monthly, today, daily, cancelled, owing, owingOrders].find((r) => r.error)?.error?.message ?? sp.error;
+  const loadError = [monthly, today, daily, owing, owingOrders].find((r) => r.error)?.error?.message ?? sp.error;
 
   const rangeForm = (
     <form method="get" className="glass flex flex-wrap items-end gap-3 rounded-2xl p-3">
@@ -222,43 +210,7 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
                   </tbody>
                 </table>
               </div>
-              <p className="text-sm text-navy/70">Grouped by the day the order was placed. Cancelled orders are not counted; sales are delivered orders only.</p>
-            </>
-          )}
-          {tab === "cancelled" && (
-            <>
-              <h2 className="text-lg font-bold">Cancelled orders</h2>
-              {rangeForm}
-              <div className="glass overflow-x-auto rounded-2xl p-2">
-                <table className="w-full min-w-[30rem] text-left">
-                  <thead>
-                    <tr className="text-sm text-navy/60">
-                      <th className="p-2">Order</th><th className="p-2">Placed</th><th className="p-2">Customer</th><th className="p-2">Items</th><th className="p-2">Amount</th><th className="p-2"><span className="sr-only">Delete</span></th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {cancelledRows.map((o) => (
-                      <tr key={o.id} className="border-t border-navy/10 tabular-nums">
-                        <td className="p-2 font-semibold">#{o.order_number}</td>
-                        <td className="p-2">{new Date(o.created_at).toLocaleString("en-PH", { timeZone: "Asia/Manila", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}</td>
-                        <td className="p-2">{o.customers?.name ?? "Walk-in"}</td>
-                        <td className="p-2">{(o.order_items ?? []).map((i: any) => `${i.quantity} × ${prodName.get(i.container_type) ?? i.container_type}`).join(", ")}</td>
-                        <td className="p-2">{peso(Number(o.total_amount))}</td>
-                        <td className="p-2">
-                          <ConfirmDelete
-                            action={deleteOrder} id={o.id} back={`/admin/reports?tab=cancelled&from=${from}&to=${to}`}
-                            message={`Permanently delete order #${o.order_number}? This can't be undone.`}
-                            label={`Delete order ${o.order_number}`}
-                          />
-                        </td>
-                      </tr>
-                    ))}
-                    {cancelledRows.length === 0 && (
-                      <tr><td colSpan={6} className="p-3 text-navy/60">No cancelled orders in this date range.</td></tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
+              <p className="text-sm text-navy/70">Grouped by the day the order was placed. Sales are delivered orders only.</p>
             </>
           )}
           {tab === "gallons" && (
@@ -279,7 +231,7 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
                           <p className="text-sm text-navy/60">
                             Order #{o.order_number}
                             {o.delivered_at && ` · delivered ${new Date(o.delivered_at).toLocaleDateString("en-PH", { timeZone: "Asia/Manila", month: "short", day: "numeric" })}`}
-                            {o.customers?.phone && ` · ${o.customers.phone}`}
+                            {o.customers?.customer_details?.phone && ` · ${o.customers.customer_details?.phone}`}
                           </p>
                         </div>
                         <span className={`shrink-0 rounded-full px-3 py-1 text-sm font-bold ${age >= 7 ? "bg-rose-100 text-rose-800" : "bg-amber-100 text-amber-800"}`}>
@@ -309,7 +261,7 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
                     <div>
                       <p className="truncate text-lg font-bold">{c.name}</p>
                       <p className="text-sm text-navy/60">
-                        Earlier balance, not tied to a specific order{c.phone && ` · ${c.phone}`}
+                        Earlier balance, not tied to a specific order{c.customer_details?.phone && ` · ${c.customer_details?.phone}`}
                       </p>
                     </div>
                     <p className="font-semibold">{c.earlier} not returned</p>

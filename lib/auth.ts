@@ -38,8 +38,6 @@ export const getProfile = cache(async (): Promise<Profile> => {
   }
 });
 
-// Any signed-in team member (staff or admin).
-export const requireStaff = getProfile;
 
 // Account controls: admin (manager) only.
 export async function requireAdmin(): Promise<Profile> {

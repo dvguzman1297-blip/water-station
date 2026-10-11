@@ -1,5 +1,5 @@
 import { AlertTriangle } from "lucide-react";
-import { requireStaff } from "@/lib/auth";
+import { requireAdmin } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { saveInventoryItem } from "../actions";
 import { Button } from "@/components/ui/button";
@@ -9,7 +9,7 @@ import { cn } from "@/lib/utils";
 export const dynamic = "force-dynamic";
 
 export default async function InventoryPage({ searchParams }: { searchParams: Promise<{ error?: string }> }) {
-  await requireStaff();
+  await requireAdmin();
   const { error } = await searchParams;
   const supabase = await createClient();
   const { data } = await supabase.from("inventory_items").select("*").order("item_name");

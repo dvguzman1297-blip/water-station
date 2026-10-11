@@ -13,11 +13,13 @@ export function NewOrder({
   products,
   onClose,
   onCreated,
+  canSeeDetails,
 }: {
   customers: Customer[];
   products: PublicProduct[];
   onClose: () => void;
   onCreated: (tag: string, orderNumber: number, customer?: string) => void;
+  canSeeDetails: boolean;
 }) {
   const [query, setQuery] = useState("");
   const [customerId, setCustomerId] = useState<string | null>(null);
@@ -35,7 +37,7 @@ export function NewOrder({
   const all = useMemo(() => [...localCustomers, ...customers], [localCustomers, customers]);
   const matches = useMemo(() => {
     const q = query.trim().toLowerCase();
-    const list = q ? all.filter((c) => c.name.toLowerCase().includes(q) || (c.phone ?? "").includes(q)) : all;
+    const list = q ? all.filter((c) => c.name.toLowerCase().includes(q)) : all;
     return list.slice(0, 6);
   }, [all, query]);
 
@@ -100,8 +102,8 @@ export function NewOrder({
           ) : adding ? (
             <div className="space-y-2 rounded-2xl bg-white/70 p-3 ring-1 ring-navy/10">
               <input className="field" placeholder="Name" value={newName} onChange={(e) => setNewName(e.target.value)} aria-label="Customer name" />
-              <input className="field" placeholder="Phone (optional)" inputMode="tel" value={newPhone} onChange={(e) => setNewPhone(e.target.value)} aria-label="Phone" />
-              <input className="field" placeholder="Address (optional)" value={newAddress} onChange={(e) => setNewAddress(e.target.value)} aria-label="Address" />
+              {canSeeDetails && <input className="field" placeholder="Phone (optional)" inputMode="tel" value={newPhone} onChange={(e) => setNewPhone(e.target.value)} aria-label="Phone" />}
+              {canSeeDetails && <input className="field" placeholder="Address (optional)" value={newAddress} onChange={(e) => setNewAddress(e.target.value)} aria-label="Address" />}
               <div className="flex gap-2">
                 <Button className="flex-1" onClick={saveCustomer} disabled={pending || !newName.trim()}>Save customer</Button>
                 <Button variant="outline" onClick={() => setAdding(false)}>Cancel</Button>
@@ -111,7 +113,7 @@ export function NewOrder({
             <>
               <div className="relative">
                 <Search className="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-navy/40" />
-                <input className="field pl-10" placeholder="Search name or phone" value={query} onChange={(e) => setQuery(e.target.value)} aria-label="Search customers" />
+                <input className="field pl-10" placeholder="Search name" value={query} onChange={(e) => setQuery(e.target.value)} aria-label="Search customers" />
               </div>
               <div className="mt-2 grid grid-cols-2 gap-2">
                 {matches.map((c) => (

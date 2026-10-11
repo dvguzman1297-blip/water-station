@@ -3,6 +3,7 @@
 import { revalidatePath, revalidateTag } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { getProfile } from "@/lib/auth";
 import { normalizeTag } from "@/lib/utils";
 import type { Result, ScanInfo } from "@/lib/types";
 
@@ -26,23 +27,76 @@ export async function signOut() {
   redirect("/login");
 }
 
-export async function createCustomer(input: {
-  name: string;
-  phone?: string;
-  address?: string;
-}): Promise<Result<{ id: string }>> {
+export type CustomerInput = { id?: string; name: string; phone?: string; address?: string; remarks?: string };
+
+// Staff can add and rename customers (name only). Phone, address and remarks are admin-only,
+// and the database enforces it: the customer_details table has no staff access.
+export async function saveCustomer(input: CustomerInput): Promise<Result<{ id: string }>> {
   const name = input.name.trim();
   if (!name) return fail("Enter the customer's name.");
+  const profile = await getProfile();
   const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("customers")
-    .insert({ name, phone: input.phone?.trim() || null, address: input.address?.trim() || null })
-    .select("id")
-    .single();
+
+  // Staff can add customers; only admins can change existing ones.
+  if (input.id && profile.role !== "admin") return fail("Only an admin can edit customers.");
+  let id = input.id;
+  if (id) {
+    const { error } = await supabase.from("customers").update({ name }).eq("id", id);
+    if (error) return fail(error.message);
+  } else {
+    const { data, error } = await supabase.from("customers").insert({ name }).select("id").single();
+    if (error) return fail(error.message);
+    id = data.id as string;
+  }
+
+  if (profile.role === "admin") {
+    const { error } = await supabase.from("customer_details").upsert({
+      customer_id: id,
+      phone: input.phone?.trim() || null,
+      address: input.address?.trim() || null,
+      remarks: input.remarks?.trim() || null,
+    });
+    if (error) return fail(error.message);
+  }
+  revalidateTag("customers");
+  revalidatePath("/");
+  revalidatePath("/customers");
+  return { ok: true, data: { id } };
+}
+
+export async function createCustomer(input: { name: string; phone?: string; address?: string }): Promise<Result<{ id: string }>> {
+  return saveCustomer(input);
+}
+
+export async function deleteCustomer(id: string): Promise<Result> {
+  if ((await getProfile()).role !== "admin") return fail("Only an admin can delete customers.");
+  const supabase = await createClient();
+  const { error } = await supabase.from("customers").delete().eq("id", id);
   if (error) return fail(error.message);
   revalidateTag("customers");
   revalidatePath("/");
-  return { ok: true, data: { id: data.id } };
+  revalidatePath("/customers");
+  return { ok: true, data: null };
+}
+
+export async function updateOrder(input: {
+  orderId: string;
+  customerId: string | null;
+  items: { code: string; qty: number }[];
+  paid: boolean;
+}): Promise<Result> {
+  const items = input.items.filter((i) => i.qty > 0);
+  if (!items.length) return fail("Add at least one gallon.");
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("update_order", {
+    p_order_id: input.orderId,
+    p_customer_id: input.customerId,
+    p_items: items,
+    p_paid: input.paid,
+  });
+  if (error) return fail(error.message);
+  revalidatePath("/");
+  return { ok: true, data: null };
 }
 
 export async function createOrder(input: {
@@ -88,14 +142,6 @@ export async function completeOrder(orderId: string, empties: number, paid: bool
 export async function markPaid(orderId: string): Promise<Result> {
   const supabase = await createClient();
   const { error } = await supabase.rpc("mark_paid", { p_order_id: orderId });
-  if (error) return fail(error.message);
-  revalidatePath("/");
-  return { ok: true, data: null };
-}
-
-export async function cancelOrder(orderId: string): Promise<Result> {
-  const supabase = await createClient();
-  const { error } = await supabase.rpc("cancel_order", { p_order_id: orderId });
   if (error) return fail(error.message);
   revalidatePath("/");
   return { ok: true, data: null };

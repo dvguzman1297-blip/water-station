@@ -5,19 +5,13 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 
-// Any signed-in team member.
-async function staffCtx() {
+// Admin (manager) only.
+async function adminCtx() {
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
-  return { supabase, user };
-}
-
-// Account controls: admin (manager) only.
-async function adminCtx() {
-  const { supabase, user } = await staffCtx();
   const { data: p } = await supabase.from("profiles").select("role").eq("id", user.id).single();
   if (p?.role !== "admin") redirect("/");
   return { supabase, user };
@@ -36,7 +30,7 @@ const str = (v: FormDataEntryValue | null) => String(v ?? "").trim();
 
 // ───────── Products / pricing ─────────
 export async function updateProduct(fd: FormData) {
-  const { supabase } = await staffCtx();
+  const { supabase } = await adminCtx();
   const { error } = await supabase
     .from("products")
     .update({
@@ -55,7 +49,7 @@ export async function updateProduct(fd: FormData) {
 }
 
 export async function addProduct(fd: FormData) {
-  const { supabase } = await staffCtx();
+  const { supabase } = await adminCtx();
   const code = str(fd.get("code")).toLowerCase().replace(/[^a-z0-9_]+/g, "_");
   if (!code || !str(fd.get("name"))) done("/admin/settings?tab=prices", "Enter a name and a code.");
   const { error } = await supabase
@@ -67,7 +61,7 @@ export async function addProduct(fd: FormData) {
 
 // ───────── Expense categories and entries ─────────
 export async function addCategory(fd: FormData) {
-  const { supabase } = await staffCtx();
+  const { supabase } = await adminCtx();
   const name = str(fd.get("name"));
   if (!name) done("/admin/settings?tab=categories", "Enter a category name.");
   const { error } = await supabase.from("expense_categories").insert({ name });
@@ -75,13 +69,13 @@ export async function addCategory(fd: FormData) {
 }
 
 export async function removeCategory(fd: FormData) {
-  const { supabase } = await staffCtx();
+  const { supabase } = await adminCtx();
   const { error } = await supabase.from("expense_categories").delete().eq("name", str(fd.get("name")));
   done("/admin/settings?tab=categories", error?.message);
 }
 
 export async function addExpense(fd: FormData) {
-  const { supabase, user } = await staffCtx();
+  const { supabase, user } = await adminCtx();
   const amount = num(fd.get("amount"));
   if (amount <= 0) done("/admin/expenses", "Enter an amount above zero.");
   const { error } = await supabase.from("expenses").insert({
@@ -95,7 +89,7 @@ export async function addExpense(fd: FormData) {
 }
 
 export async function deleteExpense(fd: FormData) {
-  const { supabase } = await staffCtx();
+  const { supabase } = await adminCtx();
   const { error } = await supabase.from("expenses").delete().eq("id", str(fd.get("id")));
   done("/admin/expenses", error?.message);
 }
@@ -153,7 +147,7 @@ export async function setStaffPassword(fd: FormData) {
 }
 
 export async function settleOrderContainers(fd: FormData) {
-  const { supabase } = await staffCtx();
+  const { supabase } = await adminCtx();
   const { error } = await supabase.rpc("settle_order_containers", {
     p_order_id: str(fd.get("order_id")),
     p_qty: Math.round(num(fd.get("qty"))),
@@ -162,7 +156,7 @@ export async function settleOrderContainers(fd: FormData) {
 }
 
 export async function settleContainers(fd: FormData) {
-  const { supabase } = await staffCtx();
+  const { supabase } = await adminCtx();
   const iso = (k: string) => (/^\d{4}-\d{2}-\d{2}$/.test(str(fd.get(k))) ? str(fd.get(k)) : "");
   const qs = new URLSearchParams({ tab: "gallons" });
   if (iso("from")) qs.set("from", iso("from"));
@@ -177,7 +171,7 @@ export async function settleContainers(fd: FormData) {
 
 // ───────── Inventory ─────────
 export async function saveInventoryItem(fd: FormData) {
-  const { supabase } = await staffCtx();
+  const { supabase } = await adminCtx();
   const id = str(fd.get("id"));
   const row = {
     item_name: str(fd.get("item_name")),
@@ -192,17 +186,3 @@ export async function saveInventoryItem(fd: FormData) {
   done("/admin/inventory", error?.message);
 }
 
-// ───────── Deletes ─────────
-export async function deleteOrder(fd: FormData) {
-  const { supabase } = await staffCtx();
-  const back = str(fd.get("back"));
-  const { error } = await supabase.rpc("delete_order", { p_order_id: str(fd.get("id")) });
-  done(back.startsWith("/admin/") ? back : "/admin/reports?tab=cancelled", error?.message);
-}
-
-export async function deleteCustomer(fd: FormData) {
-  const { supabase } = await staffCtx();
-  const { error } = await supabase.from("customers").delete().eq("id", str(fd.get("id")));
-  revalidateTag("customers");
-  done("/admin/settings?tab=customers", error?.message);
-}

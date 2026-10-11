@@ -8,10 +8,11 @@ import { Modal } from "@/components/ui/modal";
 import { cn } from "@/lib/utils";
 import { OrderCard } from "./order-card";
 import { NewOrder } from "./new-order";
+import { EditOrder } from "./edit-order";
 import { ScanFlow } from "./scan-flow";
 import { TagModal } from "./tag-modal";
 import { CompleteForm } from "./complete-form";
-import { cancelOrder, deleteOrder, markPaid, scanTag, settleOrderContainers } from "@/app/actions";
+import { deleteOrder, markPaid, scanTag, settleOrderContainers } from "@/app/actions";
 import { scanFeedback } from "@/lib/feedback";
 import type { Customer, OrderRow, PublicProduct, Status } from "@/lib/types";
 
@@ -26,17 +27,20 @@ type Overlay =
   | { kind: "new" }
   | { kind: "scan" }
   | { kind: "tag"; tag: string; orderNumber: number; customer?: string }
+  | { kind: "edit"; orderId: string }
   | { kind: "deliver"; orderId: string };
 
 export function OrderBoard({
   orders,
   products,
   customers,
+  isAdmin,
   loadError,
 }: {
   orders: OrderRow[];
   products: PublicProduct[];
   customers: Customer[];
+  isAdmin: boolean;
   loadError: string | null;
 }) {
   const router = useRouter();
@@ -98,6 +102,7 @@ export function OrderBoard({
     });
   }
 
+  const editOrder = overlay.kind === "edit" ? orders.find((o) => o.id === overlay.orderId) : undefined;
   const deliverOrder = overlay.kind === "deliver" ? orders.find((o) => o.id === overlay.orderId) : undefined;
 
   return (
@@ -159,9 +164,7 @@ export function OrderBoard({
               onDelete={() => {
                 if (confirm(`Permanently delete order #${o.order_number}? This can't be undone.`)) run(() => deleteOrder(o.id), `Order #${o.order_number} deleted`);
               }}
-              onCancel={() => {
-                if (confirm(`Cancel order #${o.order_number}?`)) run(() => cancelOrder(o.id), `Order #${o.order_number} cancelled`);
-              }}
+              onEdit={() => setOverlay({ kind: "edit", orderId: o.id })}
             />
           ))}
         </AnimatePresence>
@@ -182,12 +185,20 @@ export function OrderBoard({
       {overlay.kind === "new" && (
         <NewOrder
           customers={customers}
+          canSeeDetails={isAdmin}
           products={products}
           onClose={close}
           onCreated={(tag, orderNumber, customer) => {
             router.refresh();
             setOverlay({ kind: "tag", tag, orderNumber, customer });
           }}
+        />
+      )}
+      {overlay.kind === "edit" && editOrder && (
+        <EditOrder
+          order={editOrder} customers={customers} products={products} names={names}
+          onClose={close}
+          onSaved={() => { setToast(`Order #${editOrder.order_number} updated`); close(); }}
         />
       )}
       {overlay.kind === "scan" && <ScanFlow onClose={close} />}

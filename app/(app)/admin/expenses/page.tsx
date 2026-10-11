@@ -1,4 +1,4 @@
-import { requireStaff } from "@/lib/auth";
+import { requireAdmin } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { addExpense, deleteExpense } from "../actions";
 import { Button } from "@/components/ui/button";
@@ -8,7 +8,7 @@ import { peso } from "@/lib/utils";
 export const dynamic = "force-dynamic";
 
 export default async function ExpensesPage({ searchParams }: { searchParams: Promise<{ error?: string }> }) {
-  await requireStaff();
+  await requireAdmin();
   const { error } = await searchParams;
   const supabase = await createClient();
   const [cats, list] = await Promise.all([

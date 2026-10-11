@@ -1,4 +1,4 @@
-import { requireStaff } from "@/lib/auth";
+import { requireAdmin } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { Flash } from "@/components/flash";
 import { peso } from "@/lib/utils";
@@ -6,7 +6,7 @@ import { peso } from "@/lib/utils";
 export const dynamic = "force-dynamic";
 
 export default async function MarginsPage() {
-  await requireStaff();
+  await requireAdmin();
   const supabase = await createClient();
   const since = new Date(Date.now() - 30 * 864e5).toISOString();
   const [products, lines] = await Promise.all([

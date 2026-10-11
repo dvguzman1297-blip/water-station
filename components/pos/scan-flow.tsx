@@ -44,7 +44,7 @@ export function ScanFlow({ onClose }: { onClose: () => void }) {
         setError(`${info.tag} is not an order tag.`);
       } else if (info.action === "closed") {
         scanFeedback("error");
-        setError(`${info.tag} is already ${info.status === "cancelled" ? "cancelled" : "delivered"}.`);
+        setError(`${info.tag} is already delivered.`);
       } else if (info.action === "dispatched") {
         scanFeedback("ok");
         setPhase({ kind: "message", text: `Order #${info.order_number} for ${info.customer} is out for delivery` });

@@ -5,7 +5,6 @@ const MAP: Record<Status, { label: string; cls: string }> = {
   pending: { label: "Pending", cls: "bg-amber-100 text-amber-900 ring-amber-300" },
   out_for_delivery: { label: "Out for delivery", cls: "bg-sky-100 text-sky-900 ring-sky-300" },
   delivered: { label: "Delivered", cls: "bg-ok-50 text-emerald-900 ring-emerald-300" },
-  cancelled: { label: "Cancelled", cls: "bg-slate-100 text-slate-700 ring-slate-300" },
 };
 
 export function StatusBadge({ status }: { status: Status }) {

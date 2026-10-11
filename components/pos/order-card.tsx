@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { MapPin, Phone, QrCode, Tag, Trash2 } from "lucide-react";
+import { MapPin, Pencil, Phone, QrCode, StickyNote, Tag, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PaymentBadge, StatusBadge } from "@/components/ui/status-badge";
 import { orderTime, peso } from "@/lib/utils";
@@ -14,7 +14,7 @@ export function OrderCard({
   onDispatch,
   onDeliver,
   onMarkPaid,
-  onCancel,
+  onEdit,
   onSettle,
   onDelete,
   busy,
@@ -25,7 +25,7 @@ export function OrderCard({
   onDispatch: () => void;
   onDeliver: () => void;
   onMarkPaid: () => void;
-  onCancel: () => void;
+  onEdit: () => void;
   onSettle: (qty: number) => void;
   onDelete: () => void;
   busy: boolean;
@@ -64,6 +64,11 @@ export function OrderCard({
         {order.customers?.phone && (
           <a href={`tel:${order.customers.phone}`} className="flex items-center gap-1 underline"><Phone className="h-4 w-4" /> {order.customers.phone}</a>
         )}
+      {order.customers?.remarks && (
+        <p className="mt-2 flex items-start gap-1.5 rounded-xl bg-amber-50 px-3 py-2 text-sm font-medium text-amber-900 ring-1 ring-amber-200">
+          <StickyNote className="mt-0.5 h-4 w-4 shrink-0" /> {order.customers.remarks}
+        </p>
+      )}
       </div>
 
       {owed > 0 && (
@@ -89,22 +94,22 @@ export function OrderCard({
       <div className={`flex flex-wrap gap-2 empty:hidden ${owed > 0 ? "mt-3" : "mt-auto pt-3"}`}>
         {order.status === "pending" && (
           <>
-            <Button variant="primary" className="flex-1" onClick={onDispatch} loading={busy}>Send out for delivery</Button>
-            <Button variant="outline" onClick={onShowTag} aria-label="Show QR tag"><QrCode className="h-5 w-5" /></Button>
-            <Button variant="ghost" onClick={onCancel} disabled={busy}>Cancel</Button>
+            <Button variant="primary" className="basis-full whitespace-nowrap" onClick={onDispatch} loading={busy}>Send out for delivery</Button>
+            <Button variant="outline" className="flex-1" onClick={onShowTag} aria-label="Show QR tag"><QrCode className="h-5 w-5" /></Button>
+            <Button variant="outline" className="flex-1" onClick={onEdit} disabled={busy} aria-label={`Edit order ${order.order_number}`}><Pencil className="h-5 w-5" /></Button>
           </>
         )}
         {order.status === "out_for_delivery" && (
           <>
-            <Button variant="success" className="flex-1" onClick={onDeliver}>Delivered</Button>
-            <Button variant="outline" onClick={onShowTag} aria-label="Show QR tag"><QrCode className="h-5 w-5" /></Button>
-            <Button variant="ghost" onClick={onCancel} disabled={busy}>Cancel</Button>
+            <Button variant="success" className="basis-full whitespace-nowrap" onClick={onDeliver}>Delivered</Button>
+            <Button variant="outline" className="flex-1" onClick={onShowTag} aria-label="Show QR tag"><QrCode className="h-5 w-5" /></Button>
+            <Button variant="outline" className="flex-1" onClick={onEdit} disabled={busy} aria-label={`Edit order ${order.order_number}`}><Pencil className="h-5 w-5" /></Button>
           </>
         )}
         {order.status === "delivered" && order.payment_status === "unpaid" && (
-          <Button variant="success" className="flex-1" onClick={onMarkPaid} loading={busy}>Payment received</Button>
+          <Button variant="success" className="basis-full whitespace-nowrap" onClick={onMarkPaid} loading={busy}>Payment received</Button>
         )}
-        <Button variant="ghost" onClick={onDelete} disabled={busy} aria-label={`Delete order ${order.order_number}`}>
+        <Button variant="ghost" className="flex-1" onClick={onDelete} disabled={busy} aria-label={`Delete order ${order.order_number}`}>
           <Trash2 className="h-5 w-5" />
         </Button>
       </div>
