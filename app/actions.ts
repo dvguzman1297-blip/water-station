@@ -1,6 +1,6 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { normalizeTag } from "@/lib/utils";
@@ -40,6 +40,7 @@ export async function createCustomer(input: {
     .select("id")
     .single();
   if (error) return fail(error.message);
+  revalidateTag("customers");
   revalidatePath("/");
   return { ok: true, data: { id: data.id } };
 }
@@ -103,6 +104,14 @@ export async function cancelOrder(orderId: string): Promise<Result> {
 export async function settleOrderContainers(orderId: string, qty: number): Promise<Result> {
   const supabase = await createClient();
   const { error } = await supabase.rpc("settle_order_containers", { p_order_id: orderId, p_qty: Math.round(qty) });
+  if (error) return fail(error.message);
+  revalidatePath("/");
+  return { ok: true, data: null };
+}
+
+export async function deleteOrder(orderId: string): Promise<Result> {
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("delete_order", { p_order_id: orderId });
   if (error) return fail(error.message);
   revalidatePath("/");
   return { ok: true, data: null };

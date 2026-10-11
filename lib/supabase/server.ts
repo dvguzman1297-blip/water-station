@@ -1,10 +1,11 @@
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
+import { cache } from "react";
 import { cookies } from "next/headers";
 import { DB_SCHEMA } from "./schema";
 
 type CookieToSet = { name: string; value: string; options: CookieOptions };
 
-export async function createClient() {
+export const createClient = cache(async () => {
   const cookieStore = await cookies();
   return createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -25,4 +26,4 @@ export async function createClient() {
       },
     }
   );
-}
+});

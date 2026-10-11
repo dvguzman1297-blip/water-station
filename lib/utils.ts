@@ -15,3 +15,14 @@ export function normalizeTag(raw: string) {
   const m = raw.match(/TAG-\d+/i);
   return (m ? m[0] : raw).trim().toUpperCase();
 }
+
+/** "Oct 11, 2:06 PM" in station time (Manila), so server and browser render the same text. */
+export function orderTime(iso: string) {
+  return new Date(iso).toLocaleString("en-PH", {
+    timeZone: "Asia/Manila",
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}

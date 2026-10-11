@@ -14,6 +14,8 @@ export const viewport: Viewport = {
   themeColor: "#0f172a",
   width: "device-width",
   initialScale: 1,
+  // Shrink the page when the on-screen keyboard opens, so inputs and buttons stay visible.
+  interactiveWidget: "resizes-content",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

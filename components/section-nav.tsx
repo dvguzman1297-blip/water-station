@@ -4,17 +4,17 @@ import { cn } from "@/lib/utils";
 
 export type SectionTab = { id: string; label: string; icon: LucideIcon };
 
-/** Sidebar on desktop, scrollable pill strip on mobile. Tabs are links (`?tab=id`), so the page stays server-rendered. */
+/** Sidebar on desktop; on mobile the tabs share the row equally (icon above label) so nothing overflows. Tabs are links (`?tab=id`), so the page stays server-rendered. */
 export function SectionNav({ base, tabs, current, label }: { base: string; tabs: readonly SectionTab[]; current: string; label: string }) {
   return (
-    <nav aria-label={label} className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 lg:mx-0 lg:flex-col lg:overflow-visible lg:px-0 lg:pb-0">
+    <nav aria-label={label} className="grid grid-flow-col auto-cols-fr gap-1 lg:flex lg:flex-col lg:gap-2">
       {tabs.map(({ id, label, icon: Icon }) => (
         <Link
           key={id}
           href={`${base}?tab=${id}`}
           aria-current={current === id ? "page" : undefined}
           className={cn(
-            "flex min-h-12 shrink-0 items-center gap-3 rounded-full px-4 text-sm font-semibold",
+            "flex min-h-14 min-w-0 flex-col items-center justify-center gap-1 rounded-2xl px-1 py-2 text-center text-xs font-semibold leading-tight lg:min-h-12 lg:flex-row lg:justify-start lg:gap-3 lg:rounded-full lg:px-4 lg:text-sm",
             current === id ? "bg-ocean/15 text-navy" : "text-navy/70 hover:bg-navy/5"
           )}
         >

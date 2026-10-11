@@ -1,12 +1,13 @@
 import Link from "next/link";
 import { BarChart3, PackageX, Truck, XCircle } from "lucide-react";
-import { requireAdmin } from "@/lib/auth";
+import { requireStaff } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { ReportCharts, type MonthRow } from "@/components/report-charts";
 import { SectionNav } from "@/components/section-nav";
 import { Flash } from "@/components/flash";
-import { settleContainers, settleOrderContainers } from "../actions";
+import { deleteOrder, settleContainers, settleOrderContainers } from "../actions";
 import { Button } from "@/components/ui/button";
+import { ConfirmDelete } from "@/components/confirm-delete";
 import { peso } from "@/lib/utils";
 
 const TABS = [
@@ -37,7 +38,7 @@ const shiftDay = (iso: string, by: number) => {
 const PRESETS = [{ label: "7 days", days: 7 }, { label: "14 days", days: 14 }, { label: "30 days", days: 30 }, { label: "90 days", days: 90 }];
 
 export default async function ReportsPage({ searchParams }: { searchParams: Promise<{ from?: string; to?: string; tab?: string; error?: string }> }) {
-  await requireAdmin();
+  await requireStaff();
   const sp = await searchParams;
   const tab = TABS.find((t) => t.id === sp.tab)?.id ?? "overview";
   const today0 = manilaToday();
@@ -232,7 +233,7 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
                 <table className="w-full min-w-[30rem] text-left">
                   <thead>
                     <tr className="text-sm text-navy/60">
-                      <th className="p-2">Order</th><th className="p-2">Placed</th><th className="p-2">Customer</th><th className="p-2">Items</th><th className="p-2">Amount</th>
+                      <th className="p-2">Order</th><th className="p-2">Placed</th><th className="p-2">Customer</th><th className="p-2">Items</th><th className="p-2">Amount</th><th className="p-2"><span className="sr-only">Delete</span></th>
                     </tr>
                   </thead>
                   <tbody>
@@ -243,10 +244,17 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
                         <td className="p-2">{o.customers?.name ?? "Walk-in"}</td>
                         <td className="p-2">{(o.order_items ?? []).map((i: any) => `${i.quantity} × ${prodName.get(i.container_type) ?? i.container_type}`).join(", ")}</td>
                         <td className="p-2">{peso(Number(o.total_amount))}</td>
+                        <td className="p-2">
+                          <ConfirmDelete
+                            action={deleteOrder} id={o.id} back={`/admin/reports?tab=cancelled&from=${from}&to=${to}`}
+                            message={`Permanently delete order #${o.order_number}? This can't be undone.`}
+                            label={`Delete order ${o.order_number}`}
+                          />
+                        </td>
                       </tr>
                     ))}
                     {cancelledRows.length === 0 && (
-                      <tr><td colSpan={5} className="p-3 text-navy/60">No cancelled orders in this date range.</td></tr>
+                      <tr><td colSpan={6} className="p-3 text-navy/60">No cancelled orders in this date range.</td></tr>
                     )}
                   </tbody>
                 </table>

@@ -1,10 +1,10 @@
 "use client";
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { MapPin, Phone, QrCode, Tag } from "lucide-react";
+import { MapPin, Phone, QrCode, Tag, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PaymentBadge, StatusBadge } from "@/components/ui/status-badge";
-import { peso } from "@/lib/utils";
+import { orderTime, peso } from "@/lib/utils";
 import type { OrderRow } from "@/lib/types";
 
 export function OrderCard({
@@ -16,6 +16,7 @@ export function OrderCard({
   onMarkPaid,
   onCancel,
   onSettle,
+  onDelete,
   busy,
 }: {
   order: OrderRow;
@@ -26,6 +27,7 @@ export function OrderCard({
   onMarkPaid: () => void;
   onCancel: () => void;
   onSettle: (qty: number) => void;
+  onDelete: () => void;
   busy: boolean;
 }) {
   const ordered = order.order_items.reduce((n, i) => n + i.quantity, 0);
@@ -42,7 +44,7 @@ export function OrderCard({
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="text-sm font-semibold text-navy/60">Order #{order.order_number}</p>
+          <p className="text-sm font-semibold text-navy/60">Order #{order.order_number} · {orderTime(order.created_at)}</p>
           <p className="truncate text-xl font-bold">{order.customers?.name ?? "Walk-in"}</p>
         </div>
         <div className="flex flex-col items-end gap-1">
@@ -102,6 +104,9 @@ export function OrderCard({
         {order.status === "delivered" && order.payment_status === "unpaid" && (
           <Button variant="success" className="flex-1" onClick={onMarkPaid} loading={busy}>Payment received</Button>
         )}
+        <Button variant="ghost" onClick={onDelete} disabled={busy} aria-label={`Delete order ${order.order_number}`}>
+          <Trash2 className="h-5 w-5" />
+        </Button>
       </div>
     </motion.li>
   );

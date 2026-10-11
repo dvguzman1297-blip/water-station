@@ -11,7 +11,7 @@ import { NewOrder } from "./new-order";
 import { ScanFlow } from "./scan-flow";
 import { TagModal } from "./tag-modal";
 import { CompleteForm } from "./complete-form";
-import { cancelOrder, markPaid, scanTag, settleOrderContainers } from "@/app/actions";
+import { cancelOrder, deleteOrder, markPaid, scanTag, settleOrderContainers } from "@/app/actions";
 import { scanFeedback } from "@/lib/feedback";
 import type { Customer, OrderRow, PublicProduct, Status } from "@/lib/types";
 
@@ -156,6 +156,9 @@ export function OrderBoard({
               onDeliver={() => setOverlay({ kind: "deliver", orderId: o.id })}
               onMarkPaid={() => run(() => markPaid(o.id), `Order #${o.order_number} marked paid`)}
               onSettle={(qty) => run(() => settleOrderContainers(o.id, qty), `Order #${o.order_number}: ${qty} returned`)}
+              onDelete={() => {
+                if (confirm(`Permanently delete order #${o.order_number}? This can't be undone.`)) run(() => deleteOrder(o.id), `Order #${o.order_number} deleted`);
+              }}
               onCancel={() => {
                 if (confirm(`Cancel order #${o.order_number}?`)) run(() => cancelOrder(o.id), `Order #${o.order_number} cancelled`);
               }}

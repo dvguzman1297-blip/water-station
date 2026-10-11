@@ -1,12 +1,12 @@
 import { createClient } from "@/lib/supabase/server";
-import { getProfile } from "@/lib/auth";
+import { getCustomerList, getPublicProducts } from "@/lib/cached";
 import { OrderBoard } from "@/components/pos/order-board";
 import type { Customer, OrderRow, PublicProduct } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
 export default async function StaffDashboard() {
-  await getProfile();
+  // No auth lookup here: middleware already requires a session and RLS guards the queries.
   const supabase = await createClient();
   const since = new Date(Date.now() - 2 * 864e5).toISOString();
 
@@ -21,8 +21,9 @@ export default async function StaffDashboard() {
       )
       .order("created_at", { ascending: false })
       .limit(200),
-    supabase.from("products_public").select("code, name, price").order("sort_order"),
-    supabase.from("customers").select("id, name, phone, address").order("name").limit(1000),
+    // Rarely change, so served from the server cache (see lib/cached.ts).
+    getPublicProducts().then((data) => ({ data, error: null })).catch((e: Error) => ({ data: null, error: e })),
+    getCustomerList().then((data) => ({ data, error: null })).catch((e: Error) => ({ data: null, error: e })),
     // Older deliveries that still have gallons out stay on the Delivered tab until settled.
     supabase
       .from("orders")

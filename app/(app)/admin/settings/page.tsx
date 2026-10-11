@@ -1,21 +1,23 @@
-import { Receipt, Tag, Users } from "lucide-react";
-import { requireAdmin } from "@/lib/auth";
+import { Receipt, Tag, UserRound, Users } from "lucide-react";
+import { requireStaff } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import {
-  addCategory, addProduct, createStaff, removeCategory, removeStaff,
+  addCategory, addProduct, createStaff, deleteCustomer, removeCategory, removeStaff,
   setStaffPassword, setStaffRole, updateProduct,
 } from "../actions";
 import { Button } from "@/components/ui/button";
 import { StaffRow } from "@/components/staff-row";
 import { SectionNav } from "@/components/section-nav";
 import { Flash } from "@/components/flash";
+import { ConfirmDelete } from "@/components/confirm-delete";
 
 export const dynamic = "force-dynamic";
 
 const TABS = [
-  { id: "prices", label: "Prices & costs", icon: Tag },
-  { id: "categories", label: "Expense categories", icon: Receipt },
-  { id: "staff", label: "Staff accounts", icon: Users },
+  { id: "prices", label: "Pricing", icon: Tag },
+  { id: "categories", label: "Expenses", icon: Receipt },
+  { id: "customers", label: "Customers", icon: UserRound },
+  { id: "staff", label: "Accounts", icon: Users },
 ] as const;
 
 function Section({ title, hint, children }: { title: string; hint?: string; children: React.ReactNode }) {
@@ -31,22 +33,25 @@ function Section({ title, hint, children }: { title: string; hint?: string; chil
 }
 
 export default async function SettingsPage({ searchParams }: { searchParams: Promise<{ error?: string; tab?: string }> }) {
-  const me = await requireAdmin();
+  const me = await requireStaff();
+  const isAdmin = me.role === "admin";
+  const tabs = TABS.filter((t) => t.id !== "staff" || isAdmin);
   const { error, tab: tabParam } = await searchParams;
-  const tab = TABS.find((t) => t.id === tabParam)?.id ?? "prices";
+  const tab = tabs.find((t) => t.id === tabParam)?.id ?? "prices";
   const supabase = await createClient();
-  const [products, items, cats, staff] = await Promise.all([
+  const [products, items, cats, staff, customers] = await Promise.all([
     supabase.from("products").select("*").order("sort_order"),
     supabase.from("inventory_items").select("id, item_name").order("item_name"),
     supabase.from("expense_categories").select("name").order("name"),
-    supabase.from("profiles").select("id, full_name, role").order("full_name"),
+    tab === "staff" ? supabase.from("profiles").select("id, full_name, role").order("full_name") : { data: [] as { id: string; full_name: string; role: string }[] },
+    tab === "customers" ? supabase.from("customers").select("id, name, phone, address, container_balance").order("name") : { data: [] as { id: string; name: string; phone: string | null; address: string | null; container_balance: number }[] },
   ]);
 
   return (
     <div className="space-y-4">
       <h1 className="text-2xl font-bold">Settings</h1>
       <div className="grid gap-4 lg:grid-cols-[15rem_1fr] lg:items-start">
-        <SectionNav base="/admin/settings" tabs={TABS} current={tab} label="Settings sections" />
+        <SectionNav base="/admin/settings" tabs={tabs} current={tab} label="Settings sections" />
         <div className="min-w-0 space-y-4">
           <Flash error={error} />
           {tab === "prices" && (
@@ -110,8 +115,30 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
               </form>
             </Section>
           )}
-          {tab === "staff" && (
-            <Section title="Staff accounts" hint="Staff see orders only. Admins also see money, reports, and settings.">
+          {tab === "customers" && (
+            <Section title="Customers" hint="Deleting a customer removes their name and gallon balance. Their past orders stay and show as Walk-in.">
+              <ul className="space-y-2">
+                {(customers.data ?? []).map((c) => (
+                  <li key={c.id} className="glass flex flex-wrap items-center justify-between gap-x-3 gap-y-2 rounded-2xl p-3">
+                    <div className="min-w-0">
+                      <p className="truncate font-bold">{c.name}</p>
+                      <p className="text-sm text-navy/60">
+                        {[c.phone, c.address].filter(Boolean).join(" · ") || "No contact details"}
+                        {c.container_balance > 0 && ` · ${c.container_balance} gallon${c.container_balance === 1 ? "" : "s"} not returned`}
+                      </p>
+                    </div>
+                    <ConfirmDelete
+                      action={deleteCustomer} id={c.id} text="Delete" label={`Delete ${c.name}`}
+                      message={`Permanently delete ${c.name}? Their past orders will show as Walk-in.`}
+                    />
+                  </li>
+                ))}
+                {(customers.data ?? []).length === 0 && <li className="glass rounded-2xl p-3 text-navy/60">No customers yet.</li>}
+              </ul>
+            </Section>
+          )}
+          {tab === "staff" && isAdmin && (
+            <Section title="Staff accounts" hint="Staff can use everything except this tab. Only admins manage accounts.">
               <ul className="space-y-2">
                 {(staff.data ?? []).map((s) => (
                   <StaffRow

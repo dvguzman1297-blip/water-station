@@ -13,10 +13,9 @@ const ADMIN = [
   { href: "/admin/settings", label: "Settings", icon: Settings },
 ];
 
-export function AppNav({ isAdmin }: { isAdmin: boolean }) {
+export function AppNav() {
   const path = usePathname();
-  const items = isAdmin ? [...STAFF, ...ADMIN] : STAFF;
-  if (!isAdmin) return null;
+  const items = [...STAFF, ...ADMIN];
   return (
     <nav
       aria-label="Main"

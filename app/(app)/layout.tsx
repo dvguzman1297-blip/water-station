@@ -32,7 +32,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         </div>
       </header>
       <div className="mx-auto max-w-5xl px-4 pt-4">
-        <AppNav isAdmin={isAdmin} />
+        <AppNav />
         {children}
       </div>
     </div>
