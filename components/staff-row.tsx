@@ -5,9 +5,9 @@ import { Button } from "@/components/ui/button";
 type Action = (fd: FormData) => void | Promise<void>;
 
 export function StaffRow({
-  id, name, role, isMe, setPassword, setRole, remove,
+  id, name, email, role, isMe, setPassword, setRole, remove,
 }: {
-  id: string; name: string; role: string; isMe: boolean;
+  id: string; name: string; email?: string; role: string; isMe: boolean;
   setPassword: Action; setRole: Action; remove: Action;
 }) {
   const [open, setOpen] = useState(false);
@@ -15,6 +15,7 @@ export function StaffRow({
     <li className="glass flex flex-wrap items-center justify-between gap-x-3 gap-y-2 rounded-2xl p-3">
       <div className="min-w-0">
         <p className="truncate font-bold">{name}</p>
+        {email && <p className="truncate text-sm text-navy/70">{email}</p>}
         <p className="text-sm text-navy/60">{role === "admin" ? "Admin" : "Staff"}{isMe ? " (you)" : ""}</p>
       </div>
       <div className="flex flex-wrap gap-2">

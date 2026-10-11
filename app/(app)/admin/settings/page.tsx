@@ -1,5 +1,6 @@
 import { Receipt, Tag, UserRound, Users } from "lucide-react";
 import { requireStaff } from "@/lib/auth";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import {
   addCategory, addProduct, createStaff, deleteCustomer, removeCategory, removeStaff,
@@ -39,6 +40,12 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
   const { error, tab: tabParam } = await searchParams;
   const tab = tabs.find((t) => t.id === tabParam)?.id ?? "prices";
   const supabase = await createClient();
+  // Emails live in the auth system, not the profiles table. Only fetched for the admin-only Accounts tab.
+  const emails = new Map<string, string>();
+  if (tab === "staff" && isAdmin) {
+    const { data } = await createAdminClient().auth.admin.listUsers({ perPage: 1000 });
+    data?.users.forEach((u) => emails.set(u.id, u.email ?? ""));
+  }
   const [products, items, cats, staff, customers] = await Promise.all([
     supabase.from("products").select("*").order("sort_order"),
     supabase.from("inventory_items").select("id, item_name").order("item_name"),
@@ -142,7 +149,7 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
               <ul className="space-y-2">
                 {(staff.data ?? []).map((s) => (
                   <StaffRow
-                    key={s.id} id={s.id} name={s.full_name} role={s.role} isMe={s.id === me.id}
+                    key={s.id} id={s.id} name={s.full_name} email={emails.get(s.id)} role={s.role} isMe={s.id === me.id}
                     setPassword={setStaffPassword} setRole={setStaffRole} remove={removeStaff}
                   />
                 ))}

@@ -34,7 +34,12 @@ alter table water_station.orders
   add constraint orders_customer_id_fkey foreign key (customer_id)
   references water_station.customers(id) on delete set null;
 
--- Reports: same queries, now open to staff.
+-- Reports: same queries, now open to staff. Dropped first because the return shape may differ from the live version.
+drop function if exists water_station.monthly_report(int);
+drop function if exists water_station.today_summary();
+drop function if exists water_station.daily_orders(int);
+drop function if exists water_station.daily_orders_range(date, date);
+
 create or replace function water_station.monthly_report(p_months int default 6)
 returns table (month date, gallons bigint, gross_revenue numeric, est_cogs numeric, recorded_expenses numeric, net_margin numeric)
 language sql security definer stable set search_path = water_station as $$
@@ -139,5 +144,10 @@ end $$;
 
 grant execute on function water_station.is_staff(), water_station.delete_order(uuid) to authenticated;
 revoke execute on function water_station.is_staff(), water_station.delete_order(uuid) from anon;
+
+grant execute on function water_station.monthly_report(int), water_station.today_summary(),
+  water_station.daily_orders(int), water_station.daily_orders_range(date, date) to authenticated;
+revoke execute on function water_station.monthly_report(int), water_station.today_summary(),
+  water_station.daily_orders(int), water_station.daily_orders_range(date, date) from anon;
 
 notify pgrst, 'reload schema';
